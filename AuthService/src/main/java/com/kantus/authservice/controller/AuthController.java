@@ -10,7 +10,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Controlador REST encargado de exponer los endpoints de seguridad.
@@ -18,39 +21,49 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
-@Tag(name = "Seguridad y Accesos", description = "Endpoints para inicio de sesión, tokens y control de identidad")
+@Tag(name = "Seguridad y Accesos",
+    description = "Endpoints para inicio de sesión, tokens y control de identidad")
 public class AuthController {
 
   private final AuthService authService;
 
+  /**
+   * Autentica al usuario en el sistema.
+   *
+   * @param request Datos de acceso
+   * @param httpRequest Solicitud HTTP para extraer IP y User-Agent
+   * @return Token de acceso y Refresh Token
+   */
   @PostMapping("/login")
-  @Operation(
-      summary = "Autenticar Usuario",
-      description = "Valida las credenciales del usuario, emite un Token JWT y registra la sesión con un Refresh Token."
-  )
+  @Operation(summary = "Autenticar Usuario",
+      description = "Valida credenciales, emite JWT y registra la sesión con un Refresh Token.")
   public ResponseEntity<AuthResponse> login(
       @Valid @RequestBody LoginRequest request,
       HttpServletRequest httpRequest) {
 
     String ipOrigen = extraerIpReal(httpRequest);
-    String userAgent = httpRequest.getHeader("User-Agent"); // Capturamos el dispositivo/navegador
+    String userAgent = httpRequest.getHeader("User-Agent");
 
     AuthResponse response = authService.autenticarUsuario(request, ipOrigen, userAgent);
 
     return ResponseEntity.ok(response);
   }
 
+  /**
+   * Genera un nuevo par de tokens.
+   *
+   * @param request Request que contiene el refresh token previo
+   * @param httpRequest Solicitud HTTP
+   * @return Nuevo AuthResponse
+   */
   @PostMapping("/refresh-token")
-  @Operation(
-      summary = "Refrescar Token JWT",
-      description = "Genera un nuevo Token JWT de acceso utilizando un Refresh Token válido almacenado en sesión."
-  )
+  @Operation(summary = "Refrescar Token JWT",
+      description = "Genera un nuevo JWT usando un Refresh Token válido.")
   public ResponseEntity<AuthResponse> refreshToken(
       @Valid @RequestBody RefreshTokenRequest request,
       HttpServletRequest httpRequest) {
 
     String ipOrigen = extraerIpReal(httpRequest);
-
     AuthResponse response = authService.refrescarToken(request.getRefreshToken(), ipOrigen);
 
     return ResponseEntity.ok(response);
