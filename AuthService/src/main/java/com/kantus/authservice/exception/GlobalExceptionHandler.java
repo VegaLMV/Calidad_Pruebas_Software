@@ -51,11 +51,13 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(MethodArgumentNotValidException.class)
   public ResponseEntity<Map<String, String>> handleValidations(MethodArgumentNotValidException ex) {
     Map<String, String> errores = new HashMap<>();
-    ex.getBindingResult().getAllErrors().forEach((error) -> {
+
+    ex.getBindingResult().getAllErrors().forEach(error -> {
       String campo = ((FieldError) error).getField();
       String mensaje = error.getDefaultMessage();
       errores.put(campo, mensaje);
     });
+
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errores);
   }
 
@@ -79,7 +81,8 @@ public class GlobalExceptionHandler {
    * @return ResponseEntity con HTTP 400 Bad Request.
    */
   @ExceptionHandler(IllegalArgumentException.class)
-  public ResponseEntity<MensajeResponse> handleIllegalArgumentException(IllegalArgumentException ex) {
+  public ResponseEntity<MensajeResponse> handleIllegalArgumentException(IllegalArgumentException
+                                                                              ex) {
     MensajeResponse errorResponse = new MensajeResponse(ex.getMessage(), 400);
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
   }

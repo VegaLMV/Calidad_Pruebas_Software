@@ -29,37 +29,44 @@ public class SecurityConfig {
   private final JwtAuthenticationFilter jwtAuthFilter;
 
   /**
-   * Define la cadena de filtros de seguridad.
+   * Configura la cadena de filtros de seguridad.
    *
    * @param http Objeto HttpSecurity para configurar la seguridad.
    * @return SecurityFilterChain configurado.
-   * @throws Exception Si ocurre un error en la configuración.
+   * @throws IllegalStateException Si ocurre un error en la configuración de seguridad.
    */
   @Bean
-  public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-    http.csrf(AbstractHttpConfigurer::disable)
-        .cors(cors -> cors.configure(http))
-        .authorizeHttpRequests(auth -> auth
-            .requestMatchers(SecurityConstants.PUBLIC_MATCHERS).permitAll()
-            .anyRequest().authenticated())
-        .sessionManagement(session -> session
-            .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+  public SecurityFilterChain securityFilterChain(HttpSecurity http) {
+    try {
+      http.csrf(AbstractHttpConfigurer::disable)
+          .cors(cors -> cors.configure(http))
+          .authorizeHttpRequests(auth -> auth
+              .requestMatchers(SecurityConstants.getPublicMatchers()).permitAll()
+              .anyRequest().authenticated())
+          .sessionManagement(session -> session
+              .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+          .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
-    return http.build();
+      return http.build();
+    } catch (Exception ex) {
+      throw new IllegalStateException("Error crítico al inicializar la cadena de seguridad", ex);
+    }
   }
 
   /**
-   * Provee el AuthenticationManager global.
+   * Expone el AuthenticationManager para manejar el proceso de login.
    *
-   * @param config Configuración de autenticación.
+   * @param config Configuración de autenticación de Spring.
    * @return AuthenticationManager configurado.
-   * @throws Exception Si ocurre un error.
+   * @throws IllegalStateException Si ocurre un error al obtener el manager.
    */
   @Bean
-  public AuthenticationManager authenticationManager(
-      AuthenticationConfiguration config) throws Exception {
-    return config.getAuthenticationManager();
+  public AuthenticationManager authenticationManager(AuthenticationConfiguration config) {
+    try {
+      return config.getAuthenticationManager();
+    } catch (Exception ex) {
+      throw new IllegalStateException("Error crítico al obtener el AuthenticationManager", ex);
+    }
   }
 
   /**

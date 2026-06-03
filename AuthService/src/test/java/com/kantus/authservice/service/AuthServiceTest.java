@@ -63,13 +63,11 @@ class AuthServiceTest {
     // Arrange: Escenario de usuario no registrado
     when(usuarioRepository.findByUsername("unknown")).thenReturn(Optional.empty());
 
+    LoginRequest request = new LoginRequest("unknown", "pass");
+
     // Act & Assert: Validar comportamiento ante usuario inexistente
     assertThrows(RuntimeException.class, () ->
-        authService.autenticarUsuario(
-            new LoginRequest("unknown", "pass"),
-            "127.0.0.1",
-            "test-agent"
-        )
+        authService.autenticarUsuario(request, "127.0.0.1", "test-agent")
     );
   }
 
@@ -96,9 +94,12 @@ class AuthServiceTest {
     mockUsuario.setBloqueadoHasta(LocalDateTime.now().plusMinutes(10));
     when(usuarioRepository.findByUsername("testUser")).thenReturn(Optional.of(mockUsuario));
 
+    // CORRECCIÓN: Creamos la petición afuera
+    LoginRequest request = new LoginRequest("testUser", "pass");
+
     // Act & Assert: Validar que el sistema restringe el acceso
     assertThrows(UsuarioBloqueadoException.class, () ->
-        authService.autenticarUsuario(new LoginRequest("testUser", "pass"), "127.0.0.1", "agent")
+        authService.autenticarUsuario(request, "127.0.0.1", "agent")
     );
   }
 
@@ -109,9 +110,12 @@ class AuthServiceTest {
     when(usuarioRepository.findByUsername("testUser")).thenReturn(Optional.of(mockUsuario));
     when(authenticationManager.authenticate(any())).thenThrow(new BadCredentialsException("Bad"));
 
+    // CORRECCIÓN: Creamos la petición afuera
+    LoginRequest request = new LoginRequest("testUser", "wrong");
+
     // Act & Assert: Validar excepción y efecto secundario (incremento de intentos)
     assertThrows(CredencialesInvalidasException.class, () ->
-        authService.autenticarUsuario(new LoginRequest("testUser", "wrong"), "127.0.0.1", "agent")
+        authService.autenticarUsuario(request, "127.0.0.1", "agent")
     );
     assertEquals((short) 1, mockUsuario.getIntentosFallidos());
   }

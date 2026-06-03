@@ -12,6 +12,7 @@ import com.kantus.authservice.repository.UsuarioRepository;
 import com.kantus.authservice.repository.UsuarioRolRepository;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -30,6 +31,10 @@ public class DataInitializer implements CommandLineRunner {
   private final UsuarioRepository usuarioRepository;
   private final UsuarioRolRepository usuarioRolRepository;
   private final PasswordEncoder passwordEncoder;
+
+  // 1. Inyectamos la variable desde el archivo de configuración properties
+  @Value("${kantus.admin.default-password}")
+  private String adminDefaultPassword;
 
   @Override
   @Transactional
@@ -94,7 +99,8 @@ public class DataInitializer implements CommandLineRunner {
       Usuario admin = usuarioRepository.save(Usuario.builder()
           .username("superadmin")
           .email("admin@kantus.com")
-          .passwordHash(passwordEncoder.encode("KantusAdmin123!"))
+          // 2. Usamos la variable inyectada en lugar de la contraseña quemada
+          .passwordHash(passwordEncoder.encode(adminDefaultPassword))
           .intentosFallidos((short) 0)
           .mfaHabilitado(false)
           .requiereCambioPassword(false)

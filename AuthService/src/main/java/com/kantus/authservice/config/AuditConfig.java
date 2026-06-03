@@ -10,6 +10,4 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 @Configuration
 @EnableJpaAuditing(auditorAwareRef = "auditorProvider")
 public class AuditConfig {
-  // La anotación de clase hace todo el trabajo.
-  // No requiere lógica adicional por ahora.
 }

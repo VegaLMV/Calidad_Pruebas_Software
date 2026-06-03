@@ -1,20 +1,16 @@
 package com.kantus.authservice.util;
 
 /**
- * Centraliza las constantes utilizadas en la configuración de seguridad y JWT.
+ * Clase utilitaria que contiene las constantes de configuración de seguridad.
+ * Almacena los prefijos de tokens y las rutas públicas del sistema.
  */
-public final class SecurityConstants {
-
-  private SecurityConstants() {
-    throw new UnsupportedOperationException(
-        "Esta es una clase de utilidades y no puede ser instanciada");
-  }
+public class SecurityConstants {
 
   public static final String AUTH_HEADER = "Authorization";
   public static final String BEARER_PREFIX = "Bearer ";
 
-  // Rutas públicas que no requieren autenticación
-  public static final String[] PUBLIC_MATCHERS = {
+  // 1. Lo hacemos private para que nadie pueda modificar el original
+  private static final String[] PUBLIC_MATCHERS = {
       "/api/v1/auth/login",
       "/api/v1/auth/refresh-token",
       "/api/v1/auth/forgot-password",
@@ -23,4 +19,13 @@ public final class SecurityConstants {
       "/swagger-ui/**",
       "/swagger-ui.html"
   };
+
+  private SecurityConstants() {
+    // Constructor vacío para que Checkstyle y Sonar no pidan instanciar esta clase
+  }
+
+  // 2. Creamos un método que entrega una "copia" segura del array
+  public static String[] getPublicMatchers() {
+    return PUBLIC_MATCHERS.clone();
+  }
 }
