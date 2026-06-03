@@ -8,6 +8,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Objeto de transferencia de datos para el registro de nuevos empleados.
+ */
 @Data
 @Builder
 @AllArgsConstructor
@@ -27,5 +30,5 @@ public class EmpleadoRegistroRequest {
   private String password;
 
   @NotBlank(message = "El rol asignado es obligatorio")
-  private String rolAsignado; // Ej: ROLE_CAJERO, ROLE_COCINERO, ROLE_MOZO
+  private String rolAsignado;
 }

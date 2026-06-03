@@ -5,6 +5,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * DTO que contiene la respuesta de autenticación con los tokens y mensaje.
+ */
 @Data
 @Builder
 @AllArgsConstructor

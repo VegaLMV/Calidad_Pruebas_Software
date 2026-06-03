@@ -4,15 +4,14 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.stereotype.Service;
-
-import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import javax.crypto.SecretKey;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Service;
 
 /**
  * Servicio encargado de la generación, validación y extracción de claims
@@ -21,27 +20,44 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
-  // Llave secreta inyectada desde application.properties (con un valor por defecto seguro para desarrollo)
-  @Value("${application.security.jwt.secret-key:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}")
+  /**
+   * Llave secreta inyectada desde application.properties.
+   * Se utiliza un valor por defecto seguro para entornos de desarrollo.
+   */
+  @Value("${application.security.jwt.secret-key:"
+      + "404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}")
   private String secretKey;
 
-  @Value("${application.security.jwt.expiration:86400000}") // 1 día por defecto en milisegundos
+  @Value("${application.security.jwt.expiration:86400000}")
   private long jwtExpiration;
 
   /**
-   * Extrae el nombre de usuario (subject) almacenado en el Token.
+   * Extrae el nombre de usuario (subject) almacenado en el Token JWT.
+   *
+   * @param token El token JWT a procesar.
+   * @return El nombre de usuario contenido en el token.
    */
   public String extractUsername(String token) {
     return extractClaim(token, Claims::getSubject);
   }
 
   /**
-   * Genera un Token JWT para un usuario específico.
+   * Genera un Token JWT para un usuario utilizando claims vacíos.
+   *
+   * @param userDetails Los detalles del usuario para generar el token.
+   * @return El token JWT generado como String.
    */
   public String generateToken(UserDetails userDetails) {
     return generateToken(new HashMap<>(), userDetails);
   }
 
+  /**
+   * Genera un Token JWT con claims adicionales para un usuario específico.
+   *
+   * @param extraClaims Mapa de claims adicionales.
+   * @param userDetails Detalles del usuario.
+   * @return El token JWT generado como String.
+   */
   public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
     return Jwts.builder()
         .claims(extraClaims)
@@ -53,7 +69,11 @@ public class JwtService {
   }
 
   /**
-   * Valida si un Token es legítimo y si le pertenece al usuario que hace la petición.
+   * Valida si un Token es legítimo y si pertenece al usuario proporcionado.
+   *
+   * @param token El token JWT a validar.
+   * @param userDetails Los detalles del usuario para comparar la identidad.
+   * @return True si el token es válido y pertenece al usuario; False en caso contrario.
    */
   public boolean isTokenValid(String token, UserDetails userDetails) {
     final String username = extractUsername(token);

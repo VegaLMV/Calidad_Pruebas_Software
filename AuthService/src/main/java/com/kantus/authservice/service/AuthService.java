@@ -13,6 +13,8 @@ import com.kantus.authservice.repository.SesionRepository;
 import com.kantus.authservice.repository.UsuarioRepository;
 import com.kantus.authservice.security.CustomUserDetailsService;
 import com.kantus.authservice.security.JwtService;
+import java.time.LocalDateTime;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -21,12 +23,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.UUID;
-
 /**
  * Servicio encargado de gestionar la lógica de negocio para la autenticación de usuarios.
- * Aplica reglas de seguridad empresarial como bloqueo de cuentas, auditoría inmutable y sesiones.
+ * Aplica reglas de seguridad empresarial como bloqueo de cuentas y auditoría.
  */
 @Service
 @RequiredArgsConstructor
@@ -40,51 +39,47 @@ public class AuthService {
   private final CustomUserDetailsService userDetailsService;
 
   /**
-   * Procesa el intento de inicio de sesión de un usuario y genera la sesión.
+   * Procesa el inicio de sesión y genera la sesión.
    *
-   * @param request DTO con las credenciales (username y password).
-   * @param ipOrigen Dirección IP desde donde se realiza la petición (Para auditoría).
-   * @param userAgent Navegador o dispositivo del cliente.
-   * @return AuthResponse conteniendo el Token JWT y Refresh Token generados.
+   * @param request Datos de acceso
+   * @param ipOrigen IP del cliente
+   * @param userAgent Dispositivo
+   * @return AuthResponse con tokens
    */
   @Transactional
   public AuthResponse autenticarUsuario(LoginRequest request, String ipOrigen, String userAgent) {
 
-    // 1. Buscar al usuario
     Usuario usuario = usuarioRepository.findByUsername(request.getUsername())
         .orElseThrow(() -> new CredencialesInvalidasException("Usuario o contraseña incorrectos"));
 
-    // 2. Validar si la cuenta está bloqueada
-    if (usuario.getBloqueadoHasta() != null && usuario.getBloqueadoHasta().isAfter(LocalDateTime.now())) {
-      registrarAuditoria(usuario, TipoEventoAuditoria.LOGIN_FALLIDO, "Cuenta bloqueada temporalmente", ipOrigen);
-      throw new UsuarioBloqueadoException("Su cuenta está bloqueada por múltiples intentos fallidos. Intente más tarde.");
+    if (usuario.getBloqueadoHasta() != null
+        && usuario.getBloqueadoHasta().isAfter(LocalDateTime.now())) {
+      registrarAuditoria(usuario, TipoEventoAuditoria.LOGIN_FALLIDO,
+          "Cuenta bloqueada temporalmente", ipOrigen);
+      throw new UsuarioBloqueadoException("Su cuenta está bloqueada. Intente más tarde.");
     }
 
     try {
-      // 3. Delegar la verificación de la contraseña a Spring Security (Bcrypt)
       authenticationManager.authenticate(
           new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
       );
 
-      // 4. Resetear intentos fallidos y actualizar último login
       usuario.setIntentosFallidos((short) 0);
       usuario.setBloqueadoHasta(null);
       usuario.setUltimoLogin(LocalDateTime.now());
       usuarioRepository.save(usuario);
 
-      // 5. Registrar el evento de éxito
-      registrarAuditoria(usuario, TipoEventoAuditoria.LOGIN_EXITOSO, "Autenticación exitosa", ipOrigen);
+      registrarAuditoria(usuario, TipoEventoAuditoria.LOGIN_EXITOSO,
+          "Autenticación exitosa", ipOrigen);
 
-      // 6. Generar el Token JWT (Corta duración) cargando los roles actualizados
       UserDetails userDetails = userDetailsService.loadUserByUsername(usuario.getId().toString());
       String token = jwtService.generateToken(userDetails);
 
-      // 7. Generar y guardar Refresh Token (Larga duración) en la tabla Sesiones
       String refreshToken = UUID.randomUUID().toString();
       Sesion sesion = Sesion.builder()
           .usuario(usuario)
           .refreshTokenHash(refreshToken)
-          .fechaExpiracion(LocalDateTime.now().plusDays(7)) // El Refresh Token dura 7 días
+          .fechaExpiracion(LocalDateTime.now().plusDays(7))
           .revocado(false)
           .ipOrigen(ipOrigen)
           .userAgent(userAgent)
@@ -109,20 +104,19 @@ public class AuthService {
   @Transactional
   public AuthResponse refrescarToken(String refreshToken, String ipOrigen) {
     Sesion sesion = sesionRepository.findByRefreshTokenHash(refreshToken)
-        .orElseThrow(() -> new CredencialesInvalidasException("Refresh Token inválido o no encontrado"));
+        .orElseThrow(() -> new CredencialesInvalidasException("Token inválido"));
 
-    // Validar caducidad y revocación
     if (sesion.isRevocado() || sesion.getFechaExpiracion().isBefore(LocalDateTime.now())) {
-      throw new CredencialesInvalidasException("La sesión ha expirado o fue revocada. Inicie sesión nuevamente.");
+      throw new CredencialesInvalidasException("La sesión ha expirado o fue revocada.");
     }
 
-    // Emitir un nuevo JWT cargando los roles más recientes de la Base de Datos
-    UserDetails userDetails = userDetailsService.loadUserByUsername(sesion.getUsuario().getId().toString());
+    UserDetails userDetails = userDetailsService
+        .loadUserByUsername(sesion.getUsuario().getId().toString());
     String nuevoToken = jwtService.generateToken(userDetails);
 
     return AuthResponse.builder()
         .token(nuevoToken)
-        .refreshToken(refreshToken) // Se reutiliza el mismo refresh token hasta que caduque
+        .refreshToken(refreshToken)
         .mensaje("Token refrescado exitosamente")
         .build();
   }
@@ -131,25 +125,24 @@ public class AuthService {
     short intentos = (short) (usuario.getIntentosFallidos() + 1);
     usuario.setIntentosFallidos(intentos);
 
-    String detalleAuditoria = "Intento fallido número: " + intentos;
-
+    String detalle = "Intento fallido número: " + intentos;
     if (intentos >= 3) {
       usuario.setBloqueadoHasta(LocalDateTime.now().plusMinutes(15));
-      detalleAuditoria = "Cuenta bloqueada tras 3 intentos fallidos";
+      detalle = "Cuenta bloqueada tras 3 intentos fallidos";
     }
 
     usuarioRepository.save(usuario);
-    registrarAuditoria(usuario, TipoEventoAuditoria.LOGIN_FALLIDO, detalleAuditoria, ipOrigen);
+    registrarAuditoria(usuario, TipoEventoAuditoria.LOGIN_FALLIDO, detalle, ipOrigen);
   }
 
-  private void registrarAuditoria(Usuario usuario, TipoEventoAuditoria tipo, String detalle, String ip) {
+  private void registrarAuditoria(Usuario usuario, TipoEventoAuditoria tipo,
+                                  String detalle, String ip) {
     AuthAuditLog auditLog = AuthAuditLog.builder()
         .usuario(usuario)
         .tipoEvento(tipo)
         .detalle("{\"motivo\": \"" + detalle + "\"}")
         .ipOrigen(ip)
         .build();
-
     auditLogRepository.save(auditLog);
   }
 }

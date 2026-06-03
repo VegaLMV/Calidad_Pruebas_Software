@@ -6,6 +6,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Objeto de transferencia de datos para la solicitud de inicio de sesión.
+ */
 @Data
 @Builder
 @AllArgsConstructor

@@ -6,17 +6,21 @@ import com.kantus.authservice.dto.response.MensajeResponse;
 import com.kantus.authservice.entity.Rol;
 import com.kantus.authservice.entity.Usuario;
 import com.kantus.authservice.entity.UsuarioRol;
+import com.kantus.authservice.enums.EstadoRegistro;
 import com.kantus.authservice.mapper.UsuarioMapper;
 import com.kantus.authservice.repository.RolRepository;
 import com.kantus.authservice.repository.UsuarioRepository;
 import com.kantus.authservice.repository.UsuarioRolRepository;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-
+/**
+ * Servicio encargado de la lógica de negocio para la gestión y registro de usuarios.
+ */
 @Service
 @RequiredArgsConstructor
 public class UsuarioService {
@@ -28,39 +32,46 @@ public class UsuarioService {
   private final UsuarioMapper usuarioMapper;
 
   /**
-   * Flujo Público: Auto-registro de clientes a través de la App/Web.
-   * Siempre asigna ROLE_CLIENTE por seguridad.
+   * Flujo Público: Auto-registro de clientes. Asigna ROLE_CLIENTE por defecto.
+   *
+   * @param request Datos del nuevo cliente.
+   * @return Mensaje de confirmación.
    */
   @Transactional
   public MensajeResponse registrarCliente(RegistroRequest request) {
-    Usuario nuevoUsuario = procesarRegistroBase(request.getUsername(), request.getEmail(), request.getPassword());
+    Usuario nuevoUsuario = procesarRegistroBase(request.getUsername(), request.getEmail(),
+        request.getPassword());
 
-    // Asignación estricta de ROLE_CLIENTE
     Rol rolCliente = rolRepository.findByNombre("ROLE_CLIENTE").orElseGet(() ->
-        rolRepository.save(Rol.builder().nombre("ROLE_CLIENTE").descripcion("Cliente regular del sistema").esSistema(false).build())
-    );
+        rolRepository.save(Rol.builder()
+            .nombre("ROLE_CLIENTE")
+            .descripcion("Cliente regular del sistema")
+            .esSistema(false)
+            .build()));
 
     vincularRol(nuevoUsuario, rolCliente);
     return new MensajeResponse("Cliente registrado exitosamente en el sistema Kantus", 201);
   }
 
   /**
-   * Flujo Privado: Registro de empleados por parte de un Administrador.
-   * Permite asignar roles específicos (ROLE_CAJERO, ROLE_MOZO, etc.).
+   * Flujo Privado: Registro de empleados. Permite asignar roles específicos.
+   *
+   * @param request Datos del nuevo empleado.
+   * @return Mensaje de confirmación.
    */
   @Transactional
   public MensajeResponse registrarEmpleado(EmpleadoRegistroRequest request) {
-    Usuario nuevoUsuario = procesarRegistroBase(request.getUsername(), request.getEmail(), request.getPassword());
+    Usuario nuevoUsuario = procesarRegistroBase(request.getUsername(), request.getEmail(),
+        request.getPassword());
 
-    // Búsqueda del rol específico solicitado
     Rol rolEmpleado = rolRepository.findByNombre(request.getRolAsignado())
-        .orElseThrow(() -> new IllegalArgumentException("El rol " + request.getRolAsignado() + " no existe en el sistema"));
+        .orElseThrow(() -> new IllegalArgumentException(
+            "El rol " + request.getRolAsignado() + " no existe en el sistema"));
 
     vincularRol(nuevoUsuario, rolEmpleado);
-    return new MensajeResponse("Empleado registrado exitosamente con el rol: " + request.getRolAsignado(), 201);
+    return new MensajeResponse("Empleado registrado exitosamente con el rol: "
+        + request.getRolAsignado(), 201);
   }
-
-  // --- Métodos Privados Auxiliares para no repetir código ---
 
   private Usuario procesarRegistroBase(String username, String email, String password) {
     if (usuarioRepository.existsByUsername(username)) {
@@ -84,5 +95,34 @@ public class UsuarioService {
         .fechaAsignacion(LocalDateTime.now())
         .build();
     usuarioRolRepository.save(usuarioRol);
+  }
+
+  /**
+   * Cambia el estado (ACTIVO/INACTIVO) de un usuario en la base de datos.
+   *
+   * @param username El nombre de usuario.
+   * @param nuevoEstado El estado en formato String (ej: "INACTIVO").
+   * @return Mensaje de confirmación.
+   */
+  @Transactional
+  public MensajeResponse cambiarEstado(String username, String nuevoEstado) {
+    // 1. Buscar al usuario
+    Usuario usuario = usuarioRepository.findByUsername(username)
+        .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + username));
+
+    try {
+      // 2. Convertir el String recibido al Enum
+      EstadoRegistro estadoEnum = EstadoRegistro.valueOf(nuevoEstado.toUpperCase());
+
+      // 3. Asignar el nuevo estado (Heredado de AuditableEntity)
+      usuario.setEstadoRegistro(estadoEnum);
+      usuarioRepository.save(usuario);
+
+      return new MensajeResponse("El estado del usuario " + username
+          + " ha sido cambiado a " + estadoEnum.name(), 200);
+
+    } catch (IllegalArgumentException e) {
+      throw new IllegalArgumentException("Estado no válido. Use 'ACTIVO' o 'INACTIVO'.");
+    }
   }
 }

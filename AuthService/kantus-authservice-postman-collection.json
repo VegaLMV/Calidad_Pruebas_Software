@@ -1,0 +1,542 @@
+{
+  "info": {
+    "_postman_id": "3cec229b-11a9-4223-b0c0-e9d37f411b22",
+    "name": "Kantus AuthService - Pruebas Funcionales (Nivel 3)",
+    "description": "Suite automatizada de pruebas para el microservicio de Autenticación y Gestión de Usuarios del Restaurante Kantus. Cubre Happy Paths, ataques de seguridad, ciclo de vida de tokens, RBAC y validaciones de integridad.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "55090295",
+    "_collection_link": "https://go.postman.co/collection/55090295-3cec229b-11a9-4223-b0c0-e9d37f411b22?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "1. Autenticación y Seguridad (/login)",
+      "item": [
+        {
+          "name": "1.1 [Happy Path] Login SuperAdmin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"Contiene token y refreshToken\", function () {",
+                  "    pm.expect(jsonData).to.have.property('token');",
+                  "    pm.expect(jsonData).to.have.property('refreshToken');",
+                  "});",
+                  "pm.environment.set(\"admin_token\", jsonData.token);",
+                  "pm.environment.set(\"valid_refresh_token\", jsonData.refreshToken);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"superadmin\",\n  \"password\": \"KantusAdmin123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Inicia sesión con el administrador. Guarda el JWT dinámicamente para las siguientes peticiones."
+          },
+          "response": []
+        },
+        {
+          "name": "1.2 [Seguridad] Contraseña Incorrecta (Fuerza Bruta)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code es 401 Unauthorized\", function () { pm.expect(pm.response.code).to.be.oneOf([400, 401]); });",
+                  "pm.test(\"Mensaje de error no revela existencia del usuario\", function () { pm.expect(pm.response.text()).to.include(\"incorrectos\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"superadmin\",\n  \"password\": \"ClaveEquivocada999\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "1.3 [Seguridad] Usuario Inexistente (OSINT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code es 401 Unauthorized\", function () { pm.expect(pm.response.code).to.be.oneOf([400, 401, 404]); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"hacker_mozo_falso\",\n  \"password\": \"12345\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Pruebas centradas en el acceso y protección contra fuerza bruta."
+    },
+    {
+      "name": "2. Ciclo de Vida de Sesiones (/refresh-token)",
+      "item": [
+        {
+          "name": "2.1 [Happy Path] Refrescar Token Exitoso",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Emite un nuevo JWT\", function () { pm.expect(pm.response.json()).to.have.property('token'); });"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"4c60a5ff-0bc0-48d4-8009-dec92acd7cd6\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/refresh-token",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "refresh-token"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "2.2 [Seguridad] Refresh Token Revocado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code es 401\", function () { pm.expect(pm.response.code).to.be.oneOf([400, 401]); });",
+                  "pm.test(\"Mensaje indica revocación\", function () { pm.expect(pm.response.text()).to.include(\"inválido\"); });"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"a1c7d84e-cdb8-43a9-b0b1-88a40d8e58bc\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/refresh-token",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "refresh-token"
+              ]
+            },
+            "description": "Se envía un token explícitamente revocado en la BD."
+          },
+          "response": []
+        }
+      ],
+      "description": "Pruebas de renovación y validación de expiración de sesiones."
+    },
+    {
+      "name": "3. Autorización (RBAC) y Gestión de Usuarios",
+      "item": [
+        {
+          "name": "3.1 [Happy Path] Crear Cajero",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code es 201 Created\", function () { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });",
+                  "pm.test(\"Mensaje de éxito\", function () { pm.expect(pm.response.text()).to.include(\"ROLE_CAJERO\"); });"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"pedro_caja2\",\n  \"email\": \"pedrocaja2@kantus.com\",\n  \"password\": \"Temporal123!\",\n  \"rolAsignado\": \"ROLE_CAJERO\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/usuarios/empleados",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "usuarios",
+                "empleados"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "3.2 [Desactivar] Revocar Acceso a Empleado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code exitoso\", function () { pm.expect(pm.response.code).to.be.oneOf([200, 204]); });"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "packages": {},
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhODQyZjY1YS1lOTc0LTRhM2QtOTgxOC1kYmE2MDc4ZDJhMzMiLCJpYXQiOjE3ODA0OTkwOTksImV4cCI6MTc4MDU4NTQ5OX0.QXhyCinR4NiWtj2i1kHFdgRDPAEcIfrfzc36cj0VXtY",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"INACTIVO\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/usuarios/pedro_caja2/estado",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "usuarios",
+                "pedro_caja2",
+                "estado"
+              ]
+            },
+            "description": "El administrador desactiva la cuenta de un mozo/cajero que renunció."
+          },
+          "response": []
+        },
+        {
+          "name": "3.3 [Acceso Denegado] Endpoint Protegido sin Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code denegado (401 o 403)\", function () { \r",
+                  "    pm.expect(pm.response.code).to.be.oneOf([401, 403]); \r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"hacker_intruso\",\n  \"email\": \"bad@hacker.com\",\n  \"password\": \"123456\",\n  \"rolAsignado\": \"ROLE_ADMIN\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/usuarios/empleados",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "usuarios",
+                "empleados"
+              ]
+            },
+            "description": "Falla porque no se envía el Header Authorization."
+          },
+          "response": []
+        }
+      ],
+      "description": "Validación de permisos de creación y desactivación de empleados."
+    },
+    {
+      "name": "4. Integridad de Datos (Validaciones)",
+      "item": [
+        {
+          "name": "4.1 [Validación] Username Duplicado (UNIQUE)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code es 400 o 409 Conflict\", function () { pm.expect(pm.response.code).to.be.oneOf([400, 409]); });"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhODQyZjY1YS1lOTc0LTRhM2QtOTgxOC1kYmE2MDc4ZDJhMzMiLCJpYXQiOjE3ODA0OTkwOTksImV4cCI6MTc4MDU4NTQ5OX0.QXhyCinR4NiWtj2i1kHFdgRDPAEcIfrfzc36cj0VXtY",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"superadmin\",\n  \"email\": \"nuevo_admin@kantus.com\",\n  \"password\": \"Fuerte123!\",\n  \"rolAsignado\": \"ROLE_CAJERO\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/usuarios/empleados",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "usuarios",
+                "empleados"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "4.2 [Validación] Body Incompleto (@Valid)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code es 400 Bad Request\", function () { pm.response.to.have.status(400); });"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhODQyZjY1YS1lOTc0LTRhM2QtOTgxOC1kYmE2MDc4ZDJhMzMiLCJpYXQiOjE3ODA0OTkwOTksImV4cCI6MTc4MDU4NTQ5OX0.QXhyCinR4NiWtj2i1kHFdgRDPAEcIfrfzc36cj0VXtY",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"pedro_mozo\",\n  \"rolAsignado\": \"ROLE_MOZO\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/usuarios/empleados",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "usuarios",
+                "empleados"
+              ]
+            },
+            "description": "Falta enviar la contraseña y el correo electrónico, Spring Boot debe rechazarlo."
+          },
+          "response": []
+        }
+      ],
+      "description": "Validación de constraints de base de datos y @Valid de Spring Boot."
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8081",
+      "type": "string"
+    },
+    {
+      "key": "admin_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "valid_refresh_token",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

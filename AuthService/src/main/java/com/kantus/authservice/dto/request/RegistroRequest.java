@@ -8,6 +8,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Objeto de transferencia de datos para la solicitud de registro de nuevos usuarios.
+ */
 @Data
 @Builder
 @AllArgsConstructor

@@ -6,7 +6,8 @@ package com.kantus.authservice.util;
 public final class SecurityConstants {
 
   private SecurityConstants() {
-    throw new UnsupportedOperationException("Esta es una clase de utilidades y no puede ser instanciada");
+    throw new UnsupportedOperationException(
+        "Esta es una clase de utilidades y no puede ser instanciada");
   }
 
   public static final String AUTH_HEADER = "Authorization";
@@ -15,7 +16,7 @@ public final class SecurityConstants {
   // Rutas públicas que no requieren autenticación
   public static final String[] PUBLIC_MATCHERS = {
       "/api/v1/auth/login",
-      "/api/v1/auth/refresh-token",   // NUEVO: Endpoint explícito permitido
+      "/api/v1/auth/refresh-token",
       "/api/v1/auth/forgot-password",
       "/api/v1/usuarios/registro",
       "/v3/api-docs/**",

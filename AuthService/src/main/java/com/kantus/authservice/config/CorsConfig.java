@@ -11,6 +11,11 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class CorsConfig {
 
+  /**
+   * Configura las reglas globales de CORS para la API.
+   *
+   * @return Un objeto WebMvcConfigurer con la configuración personalizada.
+   */
   @Bean
   public WebMvcConfigurer corsConfigurer() {
     return new WebMvcConfigurer() {
@@ -21,10 +26,10 @@ public class CorsConfig {
       @Override
       public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/api/v1/**")
-            .allowedOrigins("*") // NOTA: En producción, cambiar "*" por la URL real del Frontend (Ej. "https://kantus.com")
+            .allowedOrigins("*")
             .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
             .allowedHeaders("*")
-            .maxAge(3600); // Cachea la configuración CORS por 1 hora para optimizar peticiones
+            .maxAge(3600);
       }
     };
   }

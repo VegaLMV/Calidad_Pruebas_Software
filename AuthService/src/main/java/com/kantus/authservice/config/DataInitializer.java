@@ -1,15 +1,25 @@
 package com.kantus.authservice.config;
 
-import com.kantus.authservice.entity.*;
-import com.kantus.authservice.repository.*;
+import com.kantus.authservice.entity.Permiso;
+import com.kantus.authservice.entity.Rol;
+import com.kantus.authservice.entity.RolPermiso;
+import com.kantus.authservice.entity.Usuario;
+import com.kantus.authservice.entity.UsuarioRol;
+import com.kantus.authservice.repository.PermisoRepository;
+import com.kantus.authservice.repository.RolPermisoRepository;
+import com.kantus.authservice.repository.RolRepository;
+import com.kantus.authservice.repository.UsuarioRepository;
+import com.kantus.authservice.repository.UsuarioRolRepository;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-
+/**
+ * Componente para inicializar datos maestros y configuraciones iniciales del sistema.
+ */
 @Component
 @RequiredArgsConstructor
 public class DataInitializer implements CommandLineRunner {
@@ -23,23 +33,27 @@ public class DataInitializer implements CommandLineRunner {
 
   @Override
   @Transactional
-  public void run(String... args) throws Exception {
+  public void run(String... args) {
     // 1. Crear Roles
     Rol rolAdmin = crearRol("ROLE_ADMIN", "Administrador principal", true);
+    crearRol("ROLE_CLIENTE", "Cliente", false);
+
+    // 2. Crear Permisos y 3. Vincular Permisos a Roles
+    Permiso crearPlato = crearPermiso("MENU_CREAR_PLATO",
+        "Permite crear nuevos platos", "CATALOGO");
+    asignarPermisoRol(rolAdmin, crearPlato);
+
+    Permiso cobrarMesa = crearPermiso("CAJA_COBRAR_MESA",
+        "Permite cerrar cuentas y cobrar", "CAJA");
+    asignarPermisoRol(rolAdmin, cobrarMesa);
+
     Rol rolCajero = crearRol("ROLE_CAJERO", "Cajero", true);
+    asignarPermisoRol(rolCajero, cobrarMesa);
+
+    Permiso tomarPedido = crearPermiso("PEDIDO_TOMAR",
+        "Permite registrar pedido", "OPERACIONES");
     Rol rolMozo = crearRol("ROLE_MOZO", "Mozo", true);
-    Rol rolCliente = crearRol("ROLE_CLIENTE", "Cliente", false);
-
-    // 2. Crear Permisos (Módulo Menú y Usuarios)
-    Permiso crearPlato = crearPermiso("MENU_CREAR_PLATO", "Permite crear nuevos platos", "CATALOGO");
-    Permiso cobrarMesa = crearPermiso("CAJA_COBRAR_MESA", "Permite cerrar cuentas y cobrar", "CAJA");
-    Permiso tomarPedido = crearPermiso("PEDIDO_TOMAR", "Permite registrar un pedido de cliente", "OPERACIONES");
-
-    // 3. Vincular Permisos a Roles (Matriz de Seguridad)
-    asignarPermisoARol(rolAdmin, crearPlato);
-    asignarPermisoARol(rolAdmin, cobrarMesa);
-    asignarPermisoARol(rolCajero, cobrarMesa);
-    asignarPermisoARol(rolMozo, tomarPedido);
+    asignarPermisoRol(rolMozo, tomarPedido);
 
     // 4. Crear Super Administrador
     crearAdminMaestro(rolAdmin);
@@ -47,19 +61,32 @@ public class DataInitializer implements CommandLineRunner {
 
   private Rol crearRol(String nombre, String descripcion, boolean esSistema) {
     return rolRepository.findByNombre(nombre).orElseGet(() ->
-        rolRepository.save(Rol.builder().nombre(nombre).descripcion(descripcion).esSistema(esSistema).build())
-    );
+        rolRepository.save(Rol.builder()
+            .nombre(nombre)
+            .descripcion(descripcion)
+            .esSistema(esSistema)
+            .build()));
   }
 
   private Permiso crearPermiso(String codigo, String descripcion, String modulo) {
     return permisoRepository.findByCodigo(codigo).orElseGet(() ->
-        permisoRepository.save(Permiso.builder().codigo(codigo).descripcion(descripcion).modulo(modulo).build())
-    );
+        permisoRepository.save(Permiso.builder()
+            .codigo(codigo)
+            .descripcion(descripcion)
+            .modulo(modulo)
+            .build()));
   }
 
-  private void asignarPermisoARol(Rol rol, Permiso permiso) {
-    // Validación simple para no duplicar (en un proyecto real se busca si ya existe la relación)
-    rolPermisoRepository.save(RolPermiso.builder().rol(rol).permiso(permiso).build());
+  // Renombramos el método de 'asignarPermisoARol' a 'asignarPermisoRol'
+  private void asignarPermisoRol(Rol rol, Permiso permiso) {
+    if (!rolPermisoRepository.existsByRolAndPermiso(rol, permiso)) {
+      RolPermiso rolPermiso = RolPermiso.builder()
+          .rol(rol)
+          .permiso(permiso)
+          .build();
+
+      rolPermisoRepository.save(rolPermiso);
+    }
   }
 
   private void crearAdminMaestro(Rol rolAdmin) {
@@ -74,7 +101,10 @@ public class DataInitializer implements CommandLineRunner {
           .build());
 
       usuarioRolRepository.save(UsuarioRol.builder()
-          .usuario(admin).rol(rolAdmin).fechaAsignacion(LocalDateTime.now()).build());
+          .usuario(admin)
+          .rol(rolAdmin)
+          .fechaAsignacion(LocalDateTime.now())
+          .build());
     }
   }
 }

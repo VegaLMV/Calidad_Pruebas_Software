@@ -28,26 +28,45 @@ public class SecurityConfig {
 
   private final JwtAuthenticationFilter jwtAuthFilter;
 
+  /**
+   * Define la cadena de filtros de seguridad.
+   *
+   * @param http Objeto HttpSecurity para configurar la seguridad.
+   * @return SecurityFilterChain configurado.
+   * @throws Exception Si ocurre un error en la configuración.
+   */
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-    http
-        .csrf(AbstractHttpConfigurer::disable)
+    http.csrf(AbstractHttpConfigurer::disable)
         .cors(cors -> cors.configure(http))
         .authorizeHttpRequests(auth -> auth
             .requestMatchers(SecurityConstants.PUBLIC_MATCHERS).permitAll()
-            .anyRequest().authenticated()
-        )
-        .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .anyRequest().authenticated())
+        .sessionManagement(session -> session
+            .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
     return http.build();
   }
 
+  /**
+   * Provee el AuthenticationManager global.
+   *
+   * @param config Configuración de autenticación.
+   * @return AuthenticationManager configurado.
+   * @throws Exception Si ocurre un error.
+   */
   @Bean
-  public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+  public AuthenticationManager authenticationManager(
+      AuthenticationConfiguration config) throws Exception {
     return config.getAuthenticationManager();
   }
 
+  /**
+   * Define el codificador de contraseñas utilizando BCrypt.
+   *
+   * @return PasswordEncoder instancia.
+   */
   @Bean
   public PasswordEncoder passwordEncoder() {
     return new BCryptPasswordEncoder();

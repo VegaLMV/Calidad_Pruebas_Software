@@ -1,6 +1,24 @@
 package com.kantus.authservice.repository;
-import com.kantus.authservice.entity.RolPermiso;
-import org.springframework.data.jpa.repository.JpaRepository;
-import java.util.UUID;
 
-public interface RolPermisoRepository extends JpaRepository<RolPermiso, UUID> {}
+import com.kantus.authservice.entity.Permiso;
+import com.kantus.authservice.entity.Rol;
+import com.kantus.authservice.entity.RolPermiso;
+import java.util.UUID;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+/**
+ * Repositorio para la entidad RolPermiso que gestiona la relación entre roles y permisos.
+ */
+@Repository
+public interface RolPermisoRepository extends JpaRepository<RolPermiso, UUID> {
+
+  /**
+   * Verifica si existe una relación entre un rol y un permiso específicos.
+   *
+   * @param rol     El rol a verificar.
+   * @param permiso El permiso a verificar.
+   * @return true si la relación existe, false en caso contrario.
+   */
+  boolean existsByRolAndPermiso(Rol rol, Permiso permiso);
+}
