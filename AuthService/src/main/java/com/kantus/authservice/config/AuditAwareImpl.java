@@ -32,9 +32,10 @@ public class AuditAwareImpl implements AuditorAware<UUID> {
     try {
       // 2. Extraer el UUID del Token
       String currentUserId = authentication.getName();
-      return Optional.of(UUID.fromString(currentUserId));
+      UUID auditorId = UUID.fromString(currentUserId);
+      return Optional.of(auditorId);
 
-    } catch (IllegalArgumentException e) {
+    } catch (IllegalArgumentException exception) {
       // Protección contra tokens malformados
       return Optional.of(SYSTEM_UUID);
     }

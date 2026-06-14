@@ -4,10 +4,9 @@ import com.kantus.authservice.entity.Usuario;
 import com.kantus.authservice.entity.UsuarioRol;
 import com.kantus.authservice.repository.UsuarioRepository;
 import com.kantus.authservice.repository.UsuarioRolRepository;
-import java.time.LocalDateTime;
+import com.kantus.authservice.util.DateTimeProvider;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
@@ -59,7 +58,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         .password(usuario.getPasswordHash())
         .authorities(authorities)
         .accountLocked(usuario.getBloqueadoHasta() != null
-            && usuario.getBloqueadoHasta().isAfter(LocalDateTime.now()))
+            && usuario.getBloqueadoHasta().isAfter(DateTimeProvider.now()))
         .build();
   }
 }

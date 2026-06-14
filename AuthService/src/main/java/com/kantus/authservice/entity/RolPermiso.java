@@ -27,7 +27,6 @@ import lombok.Setter;
 @Entity
 @Table(
     name = "rol_permisos",
-    schema = "auth_db",
     uniqueConstraints = @UniqueConstraint(columnNames = {"rol_id", "permiso_id"})
 )
 public class RolPermiso extends AuditableEntity {

@@ -31,7 +31,7 @@ import org.hibernate.type.SqlTypes;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "auth_audit_log", schema = "auth_db")
+@Table(name = "auth_audit_log")
 public class AuthAuditLog extends AuditableEntity {
 
   @Id

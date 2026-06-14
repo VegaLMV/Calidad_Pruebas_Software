@@ -23,7 +23,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "permisos", schema = "auth_db")
+@Table(name = "permisos")
 public class Permiso extends AuditableEntity {
 
   @Id

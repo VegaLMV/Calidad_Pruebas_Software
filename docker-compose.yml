@@ -1,0 +1,92 @@
+version: "3.9"
+
+services:
+  auth-db:
+    image: postgres:16
+    container_name: kantus-auth-db
+    environment:
+      POSTGRES_DB: db_auth
+      POSTGRES_USER: auth_user
+      POSTGRES_PASSWORD: auth_pass
+    ports:
+      - "5433:5432"
+    volumes:
+      - auth_data:/var/lib/postgresql/data
+    networks:
+      - kantus-network
+
+  customer-db:
+    image: postgres:16
+    container_name: kantus-customer-db
+    environment:
+      POSTGRES_DB: db_customer
+      POSTGRES_USER: customer_user
+      POSTGRES_PASSWORD: customer_pass
+    ports:
+      - "5434:5432"
+    volumes:
+      - customer_data:/var/lib/postgresql/data
+    networks:
+      - kantus-network
+
+  menu-db:
+    image: postgres:16
+    container_name: kantus-menu-db
+    environment:
+      POSTGRES_DB: db_menu
+      POSTGRES_USER: menu_user
+      POSTGRES_PASSWORD: menu_pass
+    ports:
+      - "5435:5432"
+    volumes:
+      - menu_data:/var/lib/postgresql/data
+    networks:
+      - kantus-network
+
+  order-db:
+    image: postgres:16
+    container_name: kantus-order-db
+    environment:
+      POSTGRES_DB: db_order_service
+      POSTGRES_USER: order_user
+      POSTGRES_PASSWORD: order_pass
+    ports:
+      - "5436:5432"
+    volumes:
+      - order_data:/var/lib/postgresql/data
+    networks:
+      - kantus-network
+
+  payment-db:
+    image: postgres:16
+    container_name: kantus-payment-db
+    environment:
+      POSTGRES_DB: db_payment
+      POSTGRES_USER: payment_user
+      POSTGRES_PASSWORD: payment_pass
+    ports:
+      - "5437:5432"
+    volumes:
+      - payment_data:/var/lib/postgresql/data
+    networks:
+      - kantus-network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: kantus-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - kantus-network
+
+volumes:
+  auth_data:
+  customer_data:
+  menu_data:
+  order_data:
+  payment_data:
+
+networks:
+  kantus-network:
+    driver: bridge

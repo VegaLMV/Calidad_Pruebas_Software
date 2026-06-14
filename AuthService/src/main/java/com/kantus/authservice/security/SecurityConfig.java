@@ -1,9 +1,9 @@
 package com.kantus.authservice.security;
 
-import com.kantus.authservice.util.SecurityConstants;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -18,7 +18,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 /**
  * Clase principal de configuración de Spring Security.
- * Reducida y optimizada utilizando la Auto-Configuración de Spring Boot 3.
  */
 @Configuration
 @EnableWebSecurity
@@ -33,7 +32,6 @@ public class SecurityConfig {
    *
    * @param http Objeto HttpSecurity para configurar la seguridad.
    * @return SecurityFilterChain configurado.
-   * @throws IllegalStateException Si ocurre un error en la configuración de seguridad.
    */
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) {
@@ -41,8 +39,22 @@ public class SecurityConfig {
       http.csrf(AbstractHttpConfigurer::disable)
           .cors(cors -> cors.configure(http))
           .authorizeHttpRequests(auth -> auth
-              .requestMatchers(SecurityConstants.getPublicMatchers()).permitAll()
-              .anyRequest().authenticated())
+
+              // Swagger / OpenAPI
+              .requestMatchers(
+                  "/swagger-ui/**",
+                  "/swagger-ui.html",
+                  "/v3/api-docs/**"
+              ).permitAll()
+
+              // Endpoints públicos reales
+              .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
+              .requestMatchers(HttpMethod.POST, "/api/v1/auth/refresh-token").permitAll()
+              .requestMatchers(HttpMethod.POST, "/api/v1/usuarios/registro").permitAll()
+
+              // Rutas restantes protegidas con JWT.
+              .anyRequest().authenticated()
+          )
           .sessionManagement(session -> session
               .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
           .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
@@ -58,7 +70,6 @@ public class SecurityConfig {
    *
    * @param config Configuración de autenticación de Spring.
    * @return AuthenticationManager configurado.
-   * @throws IllegalStateException Si ocurre un error al obtener el manager.
    */
   @Bean
   public AuthenticationManager authenticationManager(AuthenticationConfiguration config) {

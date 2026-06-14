@@ -27,7 +27,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "usuario_roles", schema = "auth_db")
+@Table(name = "usuario_roles")
 public class UsuarioRol extends AuditableEntity {
 
   @Id

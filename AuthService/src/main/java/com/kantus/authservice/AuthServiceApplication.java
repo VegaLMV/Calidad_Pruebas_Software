@@ -9,12 +9,12 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class AuthServiceApplication {
 
-	/**
-	 * Método principal para arrancar el microservicio.
-	 *
-	 * @param args argumentos de línea de comandos.
-	 */
-	public static void main(String[] args) {
-		SpringApplication.run(AuthServiceApplication.class, args);
-	}
+  /**
+   * Método principal para arrancar el microservicio.
+   *
+   * @param args argumentos de línea de comandos.
+   */
+  public static void main(String[] args) {
+    SpringApplication.run(AuthServiceApplication.class, args);
+  }
 }

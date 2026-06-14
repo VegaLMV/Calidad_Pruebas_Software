@@ -1,6 +1,7 @@
 package com.kantus.authservice.repository;
 
 import com.kantus.authservice.entity.Sesion;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -19,4 +20,13 @@ public interface SesionRepository extends JpaRepository<Sesion, UUID> {
    * @return Un Optional que contiene la sesión si existe.
    */
   Optional<Sesion> findByRefreshTokenHash(String refreshTokenHash);
+
+  /**
+   * Lista las sesiones activas no revocadas de un usuario.
+   *
+   * @param usuarioId Identificador del usuario.
+   * @return Lista de sesiones activas del usuario.
+   */
+  List<Sesion> findByUsuarioIdAndRevocadoFalse(UUID usuarioId);
+
 }

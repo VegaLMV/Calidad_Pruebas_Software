@@ -1,36 +1,42 @@
 package com.kantus.authservice.config;
 
+import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 /**
- * Configuración global de CORS para permitir peticiones desde aplicaciones cliente (Frontend).
+ * Configuración CORS restringida para clientes conocidos del sistema.
  */
 @Configuration
 public class CorsConfig {
 
   /**
-   * Configura las reglas globales de CORS para la API.
+   * Define los orígenes, métodos y cabeceras permitidos para llamadas HTTP.
    *
-   * @return Un objeto WebMvcConfigurer con la configuración personalizada.
+   * @return Fuente de configuración CORS.
    */
   @Bean
-  public WebMvcConfigurer corsConfigurer() {
-    return new WebMvcConfigurer() {
+  public CorsConfigurationSource corsConfigurationSource() {
+    CorsConfiguration configuration = new CorsConfiguration();
 
-      /**
-       * Mapea las reglas de seguridad de origen cruzado.
-       */
-      @Override
-      public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/api/v1/**")
-            .allowedOrigins("*")
-            .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-            .allowedHeaders("*")
-            .maxAge(3600);
-      }
-    };
+    configuration.setAllowedOrigins(List.of(
+        "http://localhost:3000",
+        "http://localhost:4200",
+        "http://localhost:5173",
+        "http://localhost:8080"
+    ));
+    configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+    configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+    configuration.setExposedHeaders(List.of("Authorization"));
+    configuration.setAllowCredentials(false);
+    configuration.setMaxAge(3600L);
+
+    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    source.registerCorsConfiguration("/**", configuration);
+
+    return source;
   }
 }

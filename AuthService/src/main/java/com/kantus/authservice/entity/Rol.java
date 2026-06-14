@@ -22,7 +22,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "roles", schema = "auth_db")
+@Table(name = "roles")
 public class Rol extends AuditableEntity {
 
   @Id

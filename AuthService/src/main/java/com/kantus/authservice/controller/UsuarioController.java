@@ -82,4 +82,16 @@ public class UsuarioController {
 
     return ResponseEntity.ok(response);
   }
+
+  /**
+   * Desbloquea una cuenta de usuario bloqueada por intentos fallidos.
+   *
+   * @param username Nombre de usuario a desbloquear.
+   * @return Mensaje de confirmación del desbloqueo.
+   */
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+  @PutMapping("/{username}/desbloquear")
+  public ResponseEntity<MensajeResponse> desbloquearUsuario(@PathVariable String username) {
+    return ResponseEntity.ok(usuarioService.desbloquearUsuario(username));
+  }
 }
